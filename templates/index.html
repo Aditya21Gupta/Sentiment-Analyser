@@ -1,0 +1,163 @@
+<!-- <!DOCTYPE html>
+<html>
+<head>
+    <title>Sentiment Analysis</title>
+    <link href="/static/style.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>Movie Review Sentiment Analyzer</h1>
+        <form onsubmit="return handleSubmit(event)">
+            <textarea id="review" required placeholder="Enter your movie review here..."></textarea>
+            <button type="submit">Analyze</button>
+        </form>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function handleSubmit(e) {
+            e.preventDefault()
+            const review = document.getElementById("review").value
+            const resultDiv = document.getElementById("result")
+            
+            // Clear previous results and show loading
+            resultDiv.innerHTML = '<div class="loading">Analyzing...</div>'
+            resultDiv.className = ""
+            
+            try {
+                const response = await fetch("/predict", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                    },
+                    body: `review=${encodeURIComponent(review)}`
+                })
+                
+                const data = await response.json()
+                
+                if (data.status === "success") {
+                    const confidencePercent = (data.confidence * 100).toFixed(1)
+                    resultDiv.innerHTML = `
+                        <div class="result-content">
+                            <p><strong>Sentiment:</strong> <span class="sentiment">${data.sentiment}</span></p>
+                            <p><strong>Confidence:</strong> ${confidencePercent}%</p>
+                        </div>
+                    `
+                    resultDiv.className = `result-box ${data.sentiment.toLowerCase()}`
+                } else {
+                    resultDiv.innerHTML = `<div class="error">Error: ${data.message || "Unknown error"}</div>`
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Network error. Please try again.</div>`
+                console.error("Fetch error:", error)
+            }
+        }
+    </script>
+</body>
+</html> -->
+<!-- < -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Analysis</title>
+    <link href="/static/style.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>Movie Review Sentiment Analyzer</h1>
+        <form id="sentiment-form">
+            <textarea id="review" placeholder="Enter your movie review here..." required></textarea>
+            <button type="submit">Analyze Sentiment</button>
+        </form>
+        <div id="result-container">
+            <div id="result" class="hidden">
+                <h3>Analysis Result</h3>
+                <p><strong>Sentiment:</strong> <span id="sentiment-text"></span></p>
+                <p><strong>Confidence:</strong> <span id="confidence-text"></span></p>
+                <div class="confidence-bar">
+                    <div id="confidence-level"></div>
+                </div>
+                <p class="raw-score"><small>Raw score: <span id="raw-score-text"></span></small></p>
+            </div>
+            <div id="loading" class="hidden">Analyzing...</div>
+            <div id="error-message" class="hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('sentiment-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const reviewInput = document.getElementById('review');
+            const resultDiv = document.getElementById('result');
+            const loadingDiv = document.getElementById('loading');
+            const errorDiv = document.getElementById('error-message');
+            const sentimentText = document.getElementById('sentiment-text');
+            const confidenceText = document.getElementById('confidence-text');
+            const confidenceLevel = document.getElementById('confidence-level');
+            const rawScoreText = document.getElementById('raw-score-text');
+            
+            resultDiv.classList.add('hidden');
+            errorDiv.classList.add('hidden');
+            loadingDiv.classList.remove('hidden');
+            loadingDiv.textContent = "Analyzing...";
+            
+            try {
+                const review = reviewInput.value.trim();
+                
+                if (!review) {
+                    throw new Error("Please enter a review");
+                }
+                
+                const response = await fetch("/predict", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                    },
+                    body: `review=${encodeURIComponent(review)}`
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log("Server response:", data);
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                if (!data.sentiment || data.confidence === undefined) {
+                    throw new Error("Invalid analysis response from server");
+                }
+                
+                sentimentText.textContent = data.sentiment || "Unknown";
+                confidenceText.textContent = data.confidence ? `${Math.round(data.confidence)}%` : "N/A";
+                
+                const rawScore = typeof data.raw_score === 'number' ? data.raw_score : 
+                               data.score ? data.score : 
+                               data.probability ? data.probability : 
+                               null;
+                rawScoreText.textContent = rawScore !== null ? rawScore.toFixed(4) : "N/A";
+                
+                const confidencePercent = Math.max(0, Math.min(100, data.confidence || 0));
+                confidenceLevel.style.width = `${confidencePercent}%`;
+                confidenceLevel.className = data.sentiment ? data.sentiment.toLowerCase() : "neutral";
+                
+                resultDiv.className = `result-box ${data.sentiment ? data.sentiment.toLowerCase() : "neutral"}`;
+                resultDiv.classList.remove('hidden');
+                
+            } catch (error) {
+                console.error("Error:", error);
+                errorDiv.textContent = `Analysis failed: ${error.message}`;
+                errorDiv.classList.remove('hidden');
+            } finally {
+                loadingDiv.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
